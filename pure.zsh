@@ -105,50 +105,31 @@ prompt_pure_preprompt_render() {
 
 	# Set color for git branch/dirty status, change color if dirty checking has
 	# been delayed.
-	local git_color=242
-	[[ -n ${prompt_pure_git_last_dirty_check_timestamp+x} ]] && git_color=red
+	local git_color=green
+	[[ -n ${prompt_pure_git_last_dirty_check_timestamp+x} ]] && git_color=gray
 
 	# Initialize the preprompt array.
 	local -a preprompt_parts
-
-	# Set the path.
-	preprompt_parts+=('%F{blue}%~%f')
-
-	# Add git branch and dirty status info.
-	typeset -gA prompt_pure_vcs_info
-	if [[ -n $prompt_pure_vcs_info[branch] ]]; then
-		preprompt_parts+=("%F{$git_color}"'${prompt_pure_vcs_info[branch]}${prompt_pure_git_dirty}%f')
-	fi
-	# Git pull/push arrows.
-	if [[ -n $prompt_pure_git_arrows ]]; then
-		preprompt_parts+=('%F{cyan}${prompt_pure_git_arrows}%f')
-	fi
 
 	# Username and machine, if applicable.
 	[[ -n $prompt_pure_username ]] && preprompt_parts+=('$prompt_pure_username')
 	# Execution time.
 	[[ -n $prompt_pure_cmd_exec_time ]] && preprompt_parts+=('%F{yellow}${prompt_pure_cmd_exec_time}%f')
 
-	local cleaned_ps1=$PROMPT
-	local -H MATCH
-	if [[ $PROMPT = *$prompt_newline* ]]; then
-		# When the prompt contains newlines, we keep everything before the first
-		# and after the last newline, leaving us with everything except the
-		# preprompt. This is needed because some software prefixes the prompt
-		# (e.g. virtualenv).
-		cleaned_ps1=${PROMPT%%${prompt_newline}*}${PROMPT##*${prompt_newline}}
+	# Add git branch and dirty status info.
+	typeset -gA prompt_pure_vcs_info
+	if [[ -n $prompt_pure_vcs_info[branch] ]]; then
+		preprompt_parts+=('${prompt_pure_git_dirty}(${prompt_pure_vcs_info[branch]})%f')
+	fi
+	# Git pull/push arrows.
+	if [[ -n $prompt_pure_git_arrows ]]; then
+		preprompt_parts+=('%F{cyan}${prompt_pure_git_arrows}%f')
 	fi
 
-	# Construct the new prompt with a clean preprompt.
-	local -ah ps1
-	ps1=(
-		$prompt_newline           # Initial newline, for spaciousness.
-		${(j. .)preprompt_parts}  # Join parts, space separated.
-		$prompt_newline           # Separate preprompt and prompt.
-		$cleaned_ps1
-	)
+	# Set the path.
+	preprompt_parts+=('%F{blue}%~> %f')
 
-	PROMPT="${(j..)ps1}"
+	PROMPT="${(j. .)preprompt_parts}"
 
 	# Expand the prompt for future comparision.
 	local expanded_prompt
@@ -390,9 +371,9 @@ prompt_pure_async_callback() {
 		prompt_pure_async_git_dirty)
 			local prev_dirty=$prompt_pure_git_dirty
 			if (( code == 0 )); then
-				prompt_pure_git_dirty=
+				prompt_pure_git_dirty="%F{green}"
 			else
-				prompt_pure_git_dirty="*"
+				prompt_pure_git_dirty="%F{red}"
 			fi
 
 			[[ $prev_dirty != $prompt_pure_git_dirty ]] && prompt_pure_preprompt_render
@@ -464,7 +445,7 @@ prompt_pure_setup() {
 	PROMPT='%(12V.%F{242}%12v%f .)'
 
 	# prompt turns red if the previous command didn't exit with 0
-	PROMPT+='%(?.%F{magenta}.%F{red})${PURE_PROMPT_SYMBOL:-❯}%f '
+	PROMPT+='%(?.%F{magenta}.%F{red})${PURE_PROMPT_SYMBOL:->}%f '
 }
 
 prompt_pure_setup "$@"
