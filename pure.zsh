@@ -113,21 +113,26 @@ prompt_pure_preprompt_render() {
 
 	# Username and machine, if applicable.
 	[[ -n $prompt_pure_username ]] && preprompt_parts+=('$prompt_pure_username')
-	# Execution time.
-	[[ -n $prompt_pure_cmd_exec_time ]] && preprompt_parts+=('%F{yellow}${prompt_pure_cmd_exec_time}%f')
+
+	# Set the path.
+	preprompt_parts+=('%F{blue}%~')
 
 	# Add git branch and dirty status info.
 	typeset -gA prompt_pure_vcs_info
 	if [[ -n $prompt_pure_vcs_info[branch] ]]; then
-		preprompt_parts+=('${prompt_pure_git_dirty}(${prompt_pure_vcs_info[branch]})%f')
-	fi
-	# Git pull/push arrows.
-	if [[ -n $prompt_pure_git_arrows ]]; then
-		preprompt_parts+=('%F{cyan}${prompt_pure_git_arrows}%f')
+		local git_prompt='${prompt_pure_git_dirty}(${prompt_pure_vcs_info[branch]}'
+
+		# Git pull/push arrows.
+		if [[ -n $prompt_pure_git_arrows ]]; then
+			git_prompt+='${prompt_pure_git_arrows}'
+		fi
+
+		git_prompt+=')%f'
+
+		preprompt_parts+=($git_prompt)
 	fi
 
-	# Set the path.
-	preprompt_parts+=('%F{blue}%~> %f')
+	preprompt_parts+='%f$ '
 
 	PROMPT="${(j. .)preprompt_parts}"
 
@@ -373,7 +378,7 @@ prompt_pure_async_callback() {
 			if (( code == 0 )); then
 				prompt_pure_git_dirty="%F{green}"
 			else
-				prompt_pure_git_dirty="%F{red}"
+				prompt_pure_git_dirty="%F{yellow}"
 			fi
 
 			[[ $prev_dirty != $prompt_pure_git_dirty ]] && prompt_pure_preprompt_render
